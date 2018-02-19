@@ -1,11 +1,15 @@
 package com.example.jyotirmay.contactapplication;
 
+import android.Manifest;
 import android.app.Activity;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.database.Cursor;
+import android.net.Uri;
 import android.support.constraint.ConstraintLayout;
 import android.support.design.widget.FloatingActionButton;
+import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -15,6 +19,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.example.jyotirmay.contactapplication.com.example.jyotirmay.contactapplication.datasource.ContactAdapter;
 import com.example.jyotirmay.contactapplication.com.example.jyotirmay.contactapplication.datasource.DbHandler;
@@ -27,9 +32,11 @@ public class ContactDetailsActivity extends AppCompatActivity {
     FloatingActionButton editActionButton;
     DbHandler handler;
     String id;
+    String  phoneNo, emailID;
     public final static String ID="ID";
     public final static int REQUEST_CODE=100;
     AlertDialog.Builder builder;
+    private static final int REQUEST_CODE_CALL_PHONE = 100;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -47,6 +54,8 @@ public class ContactDetailsActivity extends AppCompatActivity {
         emailLayout=findViewById(R.id.emailLayout);
         editActionButton=findViewById(R.id.floatEdit);
         deleteImageView=findViewById(R.id.imgDelete);
+
+        phoneNo = phoneTextView.getText().toString();
 
         builder = new AlertDialog.Builder(ContactDetailsActivity.this);
 
@@ -68,6 +77,53 @@ public class ContactDetailsActivity extends AppCompatActivity {
                 Intent intent=new Intent(ContactDetailsActivity.this, EditContactActivity.class);
                 intent.putExtra(ID, id);
                 startActivityForResult(intent, REQUEST_CODE);
+            }
+        });
+
+        callLayout.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent phoneIntent=new Intent(Intent.ACTION_CALL);
+                Uri phoneUri=Uri.parse("tel: "+phoneNo);
+                phoneIntent.setData(phoneUri);
+                if (ActivityCompat.checkSelfPermission(ContactDetailsActivity.this, Manifest.permission.CALL_PHONE) != PackageManager.PERMISSION_GRANTED) {
+                    String[] permissionsArray = {Manifest.permission.CALL_PHONE};
+                    ActivityCompat.requestPermissions(ContactDetailsActivity.this, permissionsArray, REQUEST_CODE_CALL_PHONE);
+                    return;
+                }
+                startActivity(phoneIntent);
+            }
+        });
+
+        messageLayout.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse("sms:" + phoneNo));
+                startActivity(intent);
+            }
+        });
+
+        messageImageView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse("sms:" + phoneNo));
+                startActivity(intent);
+            }
+        });
+
+        emailLayout.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (emailID.isEmpty())
+                {
+                    Toast.makeText(ContactDetailsActivity.this, "No email address.", Toast.LENGTH_SHORT).show();
+                }
+                else {
+                    Intent i = new Intent(Intent.ACTION_SEND);
+                    i.setType("message/rfc822");
+                    i.putExtra(Intent.EXTRA_EMAIL, new String[]{emailID});
+                    startActivity(i);
+                }
             }
         });
 
@@ -119,6 +175,8 @@ public class ContactDetailsActivity extends AppCompatActivity {
                 nameTextView.setText(nameFromDb);
                 phoneTextView.setText(phoneFromDb);
                 emailTextView.setText(emailFromDb);
+                phoneNo=phoneFromDb;
+                emailID=emailFromDb;
             }
             cursor.close();
         }
@@ -147,6 +205,7 @@ public class ContactDetailsActivity extends AppCompatActivity {
                         nameTextView.setText(nameFromDb);
                         phoneTextView.setText(phoneFromDb);
                         emailTextView.setText(emailFromDb);
+
                     }
                     cursor.close();
                 }
